@@ -1,0 +1,712 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nutrition Log</title>
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+
+        .container {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+
+        h1 {
+            text-align: center;
+            color: #333;
+            margin: 0 0 20px 0;
+            font-size: 24px;
+        }
+
+        h3 {
+            color: #FF9800;
+            margin: 20px 0 10px 0;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 5px;
+            color: #555;
+            font-size: 14px;
+        }
+
+        input[type="text"],
+        input[type="number"],
+        input[type="date"],
+        input[type="time"],
+        select,
+        textarea {
+            width: 100%;
+            padding: 10px;
+            border: 2px solid #ddd;
+            border-radius: 5px;
+            font-size: 16px;
+        }
+
+        .meal-block {
+            background: #fff3e0;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            border-left: 4px solid #FF9800;
+        }
+
+        .meal-title {
+            font-weight: bold;
+            font-size: 16px;
+            margin-bottom: 10px;
+            color: #333;
+        }
+
+        .checkbox-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin: 8px 0;
+        }
+
+        .checkbox-item input[type="checkbox"] {
+            width: 20px;
+            height: 20px;
+        }
+
+        .checkbox-item label {
+            margin: 0;
+            font-weight: normal;
+        }
+
+        .inline-input {
+            width: 80px;
+            padding: 5px;
+            display: inline-block;
+            margin-left: 5px;
+        }
+
+        .totals-section {
+            background: #e8f5e9;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 20px 0;
+        }
+
+        .water-tracker {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin: 10px 0;
+        }
+
+        .water-box {
+            width: 35px;
+            height: 35px;
+            border: 2px solid #2196F3;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        .water-box.filled {
+            background: #2196F3;
+        }
+
+        .goal-indicator {
+            display: inline-block;
+            padding: 5px 10px;
+            border-radius: 3px;
+            font-size: 12px;
+            font-weight: bold;
+            margin-left: 10px;
+        }
+
+        .goal-hit {
+            background: #4CAF50;
+            color: white;
+        }
+
+        .goal-miss {
+            background: #f44336;
+            color: white;
+        }
+
+        .button-group {
+            position: sticky;
+            bottom: 0;
+            background: white;
+            padding: 15px 0;
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            border-top: 2px solid #ddd;
+            margin-top: 20px;
+        }
+
+        button {
+            flex: 1;
+            min-width: 120px;
+            padding: 15px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        .btn-save {
+            background: #4CAF50;
+            color: white;
+        }
+
+        .btn-load {
+            background: #2196F3;
+            color: white;
+        }
+
+        .btn-pdf {
+            background: #FF9800;
+            color: white;
+        }
+
+        .btn-clear {
+            background: #f44336;
+            color: white;
+        }
+
+        .success-message {
+            background: #4CAF50;
+            color: white;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+            display: none;
+            text-align: center;
+        }
+
+        @media print {
+            body {
+                background: white;
+            }
+            .button-group {
+                display: none !important;
+            }
+            .success-message {
+                display: none !important;
+            }
+        }
+
+        @media (max-width: 600px) {
+            button {
+                min-width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+
+<div class="success-message" id="successMessage"></div>
+
+<div class="container">
+    <h1>NUTRITION LOG</h1>
+
+    <form id="nutritionForm">
+        <div class="form-group">
+            <label>Date:</label>
+            <input type="date" id="date">
+        </div>
+
+        <div class="form-group">
+            <label>Day Number (out of 84):</label>
+            <input type="number" id="dayNumber" min="1" max="84">
+        </div>
+
+        <div class="form-group">
+            <label>Bodyweight (morning, kg):</label>
+            <input type="number" id="bodyweight" step="0.1">
+        </div>
+
+        <div class="form-group">
+            <label>Weight Change (kg):</label>
+            <input type="number" id="weightChange" step="0.1" placeholder="+/- 0.2">
+        </div>
+
+        <hr style="margin: 25px 0; border: 1px solid #ddd;">
+
+        <!-- Breakfast -->
+        <div class="meal-block">
+            <div class="meal-title">BREAKFAST (8:30am)</div>
+            <div class="checkbox-item">
+                <input type="checkbox" id="m1_eggs">
+                <label for="m1_eggs">4 eggs</label>
+            </div>
+            <div class="checkbox-item">
+                <input type="checkbox" id="m1_parathas">
+                <label for="m1_parathas">3 parathas with ghee</label>
+            </div>
+            <div class="checkbox-item">
+                <input type="checkbox" id="m1_rotis">
+                <label for="m1_rotis">4 rotis</label>
+            </div>
+            <div class="checkbox-item">
+                <input type="checkbox" id="m1_paneer">
+                <label for="m1_paneer">Paneer bhurji</label>
+                <input type="number" class="inline-input" id="m1_paneer_qty" placeholder="g">
+            </div>
+            <div class="checkbox-item">
+                <input type="checkbox" id="m1_tofu">
+                <label for="m1_tofu">Tofu scramble</label>
+                <input type="number" class="inline-input" id="m1_tofu_qty" placeholder="g">
+            </div>
+            <div class="checkbox-item">
+                <input type="checkbox" id="m1_dal">
+                <label for="m1_dal">Dal (1 cup)</label>
+            </div>
+            <div class="checkbox-item">
+                <input type="checkbox" id="m1_banana">
+                <label for="m1_banana">Banana</label>
+            </div>
+            <div class="form-group" style="margin-top: 10px;">
+                <label>Other:</label>
+                <input type="text" id="m1_other" placeholder="Other items">
+            </div>
+            <div class="form-group">
+                <label>Calories:</label>
+                <input type="number" id="m1_calories" placeholder="e.g., 800">
+            </div>
+            <div class="form-group">
+                <label>Protein (g):</label>
+                <input type="number" id="m1_protein" placeholder="e.g., 40">
+            </div>
+        </div>
+
+        <!-- Lunch -->
+        <div class="meal-block">
+            <div class="meal-title">LUNCH (1:00pm)</div>
+            <div class="checkbox-item">
+                <input type="checkbox" id="m2_rotis">
+                <label for="m2_rotis">5 rotis</label>
+            </div>
+            <div class="checkbox-item">
+                <input type="checkbox" id="m2_rice">
+                <label for="m2_rice">2 cups rice</label>
+            </div>
+            <div class="checkbox-item">
+                <input type="checkbox" id="m2_paneer">
+                <label for="m2_paneer">Paneer curry</label>
+                <input type="number" class="inline-input" id="m2_paneer_qty" placeholder="g">
+            </div>
+            <div class="checkbox-item">
+                <input type="checkbox" id="m2_tofu">
+                <label for="m2_tofu">Tofu curry</label>
+                <input type="number" class="inline-input" id="m2_tofu_qty" placeholder="g">
+            </div>
+            <div class="checkbox-item">
+                <input type="checkbox" id="m2_dal">
+                <label for="m2_dal">Dal (1 cup)</label>
+            </div>
+            <div class="checkbox-item">
+                <input type="checkbox" id="m2_veg">
+                <label for="m2_veg">Mixed veg curry</label>
+            </div>
+            <div class="checkbox-item">
+                <input type="checkbox" id="m2_curd">
+                <label for="m2_curd">Curd (1 cup)</label>
+            </div>
+            <div class="form-group" style="margin-top: 10px;">
+                <label>Other:</label>
+                <input type="text" id="m2_other" placeholder="Other items">
+            </div>
+            <div class="form-group">
+                <label>Calories:</label>
+                <input type="number" id="m2_calories" placeholder="e.g., 900">
+            </div>
+            <div class="form-group">
+                <label>Protein (g):</label>
+                <input type="number" id="m2_protein" placeholder="e.g., 35">
+            </div>
+        </div>
+
+        <!-- Pre-Workout Snack -->
+        <div class="meal-block">
+            <div class="meal-title">PRE-WORKOUT SNACK (5:30pm)</div>
+            <div class="checkbox-item">
+                <input type="checkbox" id="s1_bananas">
+                <label for="s1_bananas">2 bananas</label>
+            </div>
+            <div class="checkbox-item">
+                <input type="checkbox" id="s1_peanuts">
+                <label for="s1_peanuts">Peanuts (handful)</label>
+            </div>
+            <div class="checkbox-item">
+                <input type="checkbox" id="s1_whey">
+                <label for="s1_whey">Whey protein shake</label>
+            </div>
+            <div class="checkbox-item">
+                <input type="checkbox" id="s1_paneer">
+                <label for="s1_paneer">Paneer cubes</label>
+                <input type="number" class="inline-input" id="s1_paneer_qty" placeholder="g">
+            </div>
+            <div class="checkbox-item">
+                <input type="checkbox" id="s1_apple">
+                <label for="s1_apple">Apple</label>
+            </div>
+            <div class="form-group" style="margin-top: 10px;">
+                <label>Other:</label>
+                <input type="text" id="s1_other" placeholder="Other items">
+            </div>
+            <div class="form-group">
+                <label>Calories:</label>
+                <input type="number" id="s1_calories" placeholder="e.g., 400">
+            </div>
+            <div class="form-group">
+                <label>Protein (g):</label>
+                <input type="number" id="s1_protein" placeholder="e.g., 30">
+            </div>
+        </div>
+
+        <!-- Dinner -->
+        <div class="meal-block">
+            <div class="meal-title">DINNER (7:30pm - Post Workout)</div>
+            <div class="checkbox-item">
+                <input type="checkbox" id="m3_rotis">
+                <label for="m3_rotis">4 rotis</label>
+            </div>
+            <div class="checkbox-item">
+                <input type="checkbox" id="m3_rice">
+                <label for="m3_rice">2 cups rice</label>
+            </div>
+            <div class="checkbox-item">
+                <input type="checkbox" id="m3_paneer">
+                <label for="m3_paneer">Paneer curry</label>
+                <input type="number" class="inline-input" id="m3_paneer_qty" placeholder="g">
+            </div>
+            <div class="checkbox-item">
+                <input type="checkbox" id="m3_tofu">
+                <label for="m3_tofu">Tofu curry</label>
+                <input type="number" class="inline-input" id="m3_tofu_qty" placeholder="g">
+            </div>
+            <div class="checkbox-item">
+                <input type="checkbox" id="m3_dal">
+                <label for="m3_dal">Dal (1 cup)</label>
+            </div>
+            <div class="checkbox-item">
+                <input type="checkbox" id="m3_veg">
+                <label for="m3_veg">Mixed vegetables</label>
+            </div>
+            <div class="checkbox-item">
+                <input type="checkbox" id="m3_curd">
+                <label for="m3_curd">Curd (1 cup)</label>
+            </div>
+            <div class="form-group" style="margin-top: 10px;">
+                <label>Other:</label>
+                <input type="text" id="m3_other" placeholder="Other items">
+            </div>
+            <div class="form-group">
+                <label>Calories:</label>
+                <input type="number" id="m3_calories" placeholder="e.g., 800">
+            </div>
+            <div class="form-group">
+                <label>Protein (g):</label>
+                <input type="number" id="m3_protein" placeholder="e.g., 35">
+            </div>
+        </div>
+
+        <!-- Before Bed -->
+        <div class="meal-block">
+            <div class="meal-title">BEFORE BED (10:00pm)</div>
+            <div class="checkbox-item">
+                <input type="checkbox" id="bb_curd">
+                <label for="bb_curd">1 cup curd</label>
+            </div>
+            <div class="checkbox-item">
+                <input type="checkbox" id="bb_roti">
+                <label for="bb_roti">Leftover roti</label>
+            </div>
+            <div class="checkbox-item">
+                <input type="checkbox" id="bb_biscuits">
+                <label for="bb_biscuits">Biscuits</label>
+            </div>
+            <div class="form-group" style="margin-top: 10px;">
+                <label>Other:</label>
+                <input type="text" id="bb_other" placeholder="Other items">
+            </div>
+            <div class="form-group">
+                <label>Calories:</label>
+                <input type="number" id="bb_calories" placeholder="e.g., 200">
+            </div>
+            <div class="form-group">
+                <label>Protein (g):</label>
+                <input type="number" id="bb_protein" placeholder="e.g., 10">
+            </div>
+        </div>
+
+        <hr style="margin: 25px 0; border: 1px solid #ddd;">
+
+        <!-- Totals -->
+        <div class="totals-section">
+            <h3 style="margin-top: 0;">DAILY TOTALS</h3>
+
+            <div class="form-group">
+                <label>Total Calories (Goal: 2,900-3,100)
+                    <span id="caloriesGoal" class="goal-indicator"></span>
+                </label>
+                <input type="number" id="totalCalories" readonly style="background: #f0f0f0;">
+            </div>
+
+            <div class="form-group">
+                <label>Total Protein (Goal: 150-160g)
+                    <span id="proteinGoal" class="goal-indicator"></span>
+                </label>
+                <input type="number" id="totalProtein" readonly style="background: #f0f0f0;">
+            </div>
+
+            <div class="form-group">
+                <label>Water Intake (8 glasses):</label>
+                <div class="water-tracker" id="waterTracker"></div>
+            </div>
+
+            <div class="form-group">
+                <label>Coffee Cup 1:</label>
+                <input type="time" id="coffee1">
+            </div>
+
+            <div class="form-group">
+                <label>Coffee Cup 2:</label>
+                <input type="time" id="coffee2">
+            </div>
+            <p style="color: #f44336; font-weight: bold; margin: 5px 0;">⚠️ NONE AFTER 12PM</p>
+        </div>
+
+        <!-- Notes -->
+        <h3>NOTES</h3>
+
+        <div class="form-group">
+            <label>Hunger Level (1-10):</label>
+            <input type="number" id="hungerLevel" min="1" max="10">
+        </div>
+
+        <div class="form-group">
+            <label>Digestion:</label>
+            <select id="digestion">
+                <option value="">Select...</option>
+                <option value="Good">Good</option>
+                <option value="OK">OK</option>
+                <option value="Poor">Poor</option>
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label>Energy Level (1-10):</label>
+            <input type="number" id="energyLevel" min="1" max="10">
+        </div>
+
+        <div class="form-group">
+            <label>Adjustments for Tomorrow:</label>
+            <textarea id="adjustments" rows="3"></textarea>
+        </div>
+
+        <div class="button-group">
+            <button type="button" class="btn-save" onclick="saveNutrition()">💾 Save</button>
+            <button type="button" class="btn-load" onclick="loadNutrition()">📂 Load</button>
+            <button type="button" class="btn-pdf" onclick="savePDF()">📄 PDF</button>
+            <button type="button" class="btn-clear" onclick="clearForm()">🗑️ Clear</button>
+        </div>
+    </form>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    createWaterTracker();
+    document.getElementById('date').valueAsDate = new Date();
+    setupAutoCalculate();
+});
+
+function createWaterTracker() {
+    const container = document.getElementById('waterTracker');
+    for (let i = 0; i < 8; i++) {
+        const box = document.createElement('div');
+        box.className = 'water-box';
+        box.onclick = function() {
+            this.classList.toggle('filled');
+        };
+        container.appendChild(box);
+    }
+}
+
+function setupAutoCalculate() {
+    ['m1_calories', 'm2_calories', 's1_calories', 'm3_calories', 'bb_calories',
+     'm1_protein', 'm2_protein', 's1_protein', 'm3_protein', 'bb_protein'
+    ].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) {
+            el.addEventListener('input', calculateTotals);
+        }
+    });
+}
+
+function calculateTotals() {
+    const calories = ['m1_calories', 'm2_calories', 's1_calories', 'm3_calories', 'bb_calories']
+        .reduce((sum, id) => sum + (parseFloat(document.getElementById(id).value) || 0), 0);
+
+    const protein = ['m1_protein', 'm2_protein', 's1_protein', 'm3_protein', 'bb_protein']
+        .reduce((sum, id) => sum + (parseFloat(document.getElementById(id).value) || 0), 0);
+
+    document.getElementById('totalCalories').value = calories || '';
+    document.getElementById('totalProtein').value = protein || '';
+
+    const calGoal = document.getElementById('caloriesGoal');
+    if (calories >= 2900 && calories <= 3100) {
+        calGoal.textContent = '✓ HIT';
+        calGoal.className = 'goal-indicator goal-hit';
+    } else if (calories > 0) {
+        calGoal.textContent = '✗ MISS';
+        calGoal.className = 'goal-indicator goal-miss';
+    } else {
+        calGoal.textContent = '';
+    }
+
+    const proGoal = document.getElementById('proteinGoal');
+    if (protein >= 150 && protein <= 160) {
+        proGoal.textContent = '✓ HIT';
+        proGoal.className = 'goal-indicator goal-hit';
+    } else if (protein > 0) {
+        proGoal.textContent = '✗ MISS';
+        proGoal.className = 'goal-indicator goal-miss';
+    } else {
+        proGoal.textContent = '';
+    }
+}
+
+function saveNutrition() {
+    const data = {
+        date: document.getElementById('date').value,
+        dayNumber: document.getElementById('dayNumber').value,
+        bodyweight: document.getElementById('bodyweight').value,
+        weightChange: document.getElementById('weightChange').value,
+        meals: {},
+        totals: {
+            calories: document.getElementById('totalCalories').value,
+            protein: document.getElementById('totalProtein').value,
+            water: document.querySelectorAll('.water-box.filled').length
+        },
+        coffee: {
+            cup1: document.getElementById('coffee1').value,
+            cup2: document.getElementById('coffee2').value
+        },
+        notes: {
+            hunger: document.getElementById('hungerLevel').value,
+            digestion: document.getElementById('digestion').value,
+            energy: document.getElementById('energyLevel').value,
+            adjustments: document.getElementById('adjustments').value
+        }
+    };
+
+    // Save meal checkboxes and inputs
+    const meals = ['m1', 'm2', 's1', 'm3', 'bb'];
+    meals.forEach(meal => {
+        data.meals[meal] = {};
+        document.querySelectorAll(`[id^="${meal}_"]`).forEach(el => {
+            if (el.type === 'checkbox') {
+                data.meals[meal][el.id] = el.checked;
+            } else if (el.type === 'number' || el.type === 'text') {
+                data.meals[meal][el.id] = el.value;
+            }
+        });
+    });
+
+    localStorage.setItem('lastNutrition', JSON.stringify(data));
+    showMessage('Nutrition log saved! 🍽️');
+}
+
+function loadNutrition() {
+    const saved = localStorage.getItem('lastNutrition');
+    if (!saved) {
+        alert('No saved log found!');
+        return;
+    }
+
+    const data = JSON.parse(saved);
+    document.getElementById('date').value = data.date || '';
+    document.getElementById('dayNumber').value = data.dayNumber || '';
+    document.getElementById('bodyweight').value = data.bodyweight || '';
+    document.getElementById('weightChange').value = data.weightChange || '';
+
+    // Load meals
+    Object.entries(data.meals || {}).forEach(([meal, items]) => {
+        Object.entries(items).forEach(([id, value]) => {
+            const el = document.getElementById(id);
+            if (el) {
+                if (el.type === 'checkbox') {
+                    el.checked = value;
+                } else {
+                    el.value = value;
+                }
+            }
+        });
+    });
+
+    // Load water
+    const boxes = document.querySelectorAll('.water-box');
+    boxes.forEach((box, i) => {
+        if (i < (data.totals?.water || 0)) {
+            box.classList.add('filled');
+        } else {
+            box.classList.remove('filled');
+        }
+    });
+
+    // Load other fields
+    document.getElementById('coffee1').value = data.coffee?.cup1 || '';
+    document.getElementById('coffee2').value = data.coffee?.cup2 || '';
+    document.getElementById('hungerLevel').value = data.notes?.hunger || '';
+    document.getElementById('digestion').value = data.notes?.digestion || '';
+    document.getElementById('energyLevel').value = data.notes?.energy || '';
+    document.getElementById('adjustments').value = data.notes?.adjustments || '';
+
+    calculateTotals();
+    showMessage('Nutrition log loaded! 📂');
+}
+
+function savePDF() {
+    window.print();
+}
+
+function clearForm() {
+    if (confirm('Clear all fields?')) {
+        document.getElementById('nutritionForm').reset();
+        document.getElementById('date').valueAsDate = new Date();
+        document.querySelectorAll('.water-box').forEach(box => {
+            box.classList.remove('filled');
+        });
+        calculateTotals();
+    }
+}
+
+function showMessage(msg) {
+    const el = document.getElementById('successMessage');
+    el.textContent = msg;
+    el.style.display = 'block';
+    setTimeout(() => {
+        el.style.display = 'none';
+    }, 3000);
+}
+</script>
+
+</body>
+</html>
