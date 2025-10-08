@@ -1,0 +1,638 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interactive Workout Log</title>
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+
+        .header {
+            text-align: center;
+            border-bottom: 3px solid #333;
+            padding-bottom: 15px;
+            margin-bottom: 25px;
+        }
+
+        .header h1 {
+            margin: 0;
+            color: #333;
+            font-size: 24px;
+        }
+
+        .info-section {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 15px;
+            margin-bottom: 25px;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 5px;
+            color: #555;
+            font-size: 14px;
+        }
+
+        input[type="text"],
+        input[type="number"],
+        input[type="date"],
+        select,
+        textarea {
+            width: 100%;
+            padding: 10px;
+            border: 2px solid #ddd;
+            border-radius: 5px;
+            font-size: 14px;
+            transition: border-color 0.3s;
+        }
+
+        input[type="text"]:focus,
+        input[type="number"]:focus,
+        select:focus,
+        textarea:focus {
+            outline: none;
+            border-color: #4CAF50;
+        }
+
+        .radio-group {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+
+        .radio-group label {
+            display: flex;
+            align-items: center;
+            font-weight: normal;
+            margin-bottom: 0;
+            cursor: pointer;
+        }
+
+        .radio-group input[type="radio"] {
+            margin-right: 5px;
+            cursor: pointer;
+        }
+
+        .separator {
+            border-top: 2px dashed #ccc;
+            margin: 25px 0;
+        }
+
+        .exercise-block {
+            background: #f9f9f9;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            border-left: 4px solid #4CAF50;
+        }
+
+        .exercise-title {
+            font-weight: bold;
+            font-size: 16px;
+            margin-bottom: 15px;
+            color: #333;
+        }
+
+        .set-grid {
+            display: grid;
+            grid-template-columns: auto 1fr 1fr 1fr;
+            gap: 10px;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .set-label {
+            font-weight: 600;
+            color: #666;
+        }
+
+        input[type="number"].small {
+            width: 80px;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 10px;
+            margin-top: 25px;
+            flex-wrap: wrap;
+        }
+
+        button {
+            padding: 12px 25px;
+            border: none;
+            border-radius: 5px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .btn-save {
+            background: #4CAF50;
+            color: white;
+        }
+
+        .btn-save:hover {
+            background: #45a049;
+        }
+
+        .btn-load {
+            background: #2196F3;
+            color: white;
+        }
+
+        .btn-load:hover {
+            background: #0b7dda;
+        }
+
+        .btn-clear {
+            background: #f44336;
+            color: white;
+        }
+
+        .btn-clear:hover {
+            background: #da190b;
+        }
+
+        .btn-pdf {
+            background: #FF9800;
+            color: white;
+        }
+
+        .btn-pdf:hover {
+            background: #e68900;
+        }
+
+        @media print {
+            body {
+                background: white;
+                padding: 20px;
+            }
+            .container {
+                box-shadow: none;
+                border: 1px solid #000;
+            }
+            .button-group {
+                display: none !important;
+            }
+            .success-message {
+                display: none !important;
+            }
+        }
+
+        .footer {
+            background: #f9f9f9;
+            padding: 20px;
+            border-radius: 8px;
+            margin-top: 25px;
+        }
+
+        @media (max-width: 768px) {
+            .set-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .info-section {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .success-message {
+            background: #4CAF50;
+            color: white;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+
+<div class="success-message" id="successMessage"></div>
+
+<div class="container">
+    <div class="header">
+        <h1>WORKOUT LOG</h1>
+    </div>
+
+    <form id="workoutForm">
+        <div class="info-section">
+            <div class="form-group">
+                <label>Day Number (out of 84):</label>
+                <input type="number" id="dayNumber" min="1" max="84" placeholder="e.g., 1">
+            </div>
+
+            <div class="form-group">
+                <label>Date:</label>
+                <input type="date" id="date">
+            </div>
+
+            <div class="form-group">
+                <label>Workout Type:</label>
+                <div class="radio-group">
+                    <label><input type="radio" name="workoutType" value="PUSH"> Push</label>
+                    <label><input type="radio" name="workoutType" value="PULL"> Pull</label>
+                    <label><input type="radio" name="workoutType" value="LEGS"> Legs</label>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label>Bodyweight (kg):</label>
+                <input type="number" id="bodyweight" step="0.1" placeholder="e.g., 70.5">
+            </div>
+
+            <div class="form-group">
+                <label>Sleep Last Night (hours):</label>
+                <input type="number" id="sleepHours" step="0.5" min="0" max="24" placeholder="e.g., 7.5">
+            </div>
+
+            <div class="form-group">
+                <label>Sleep Quality (1-10):</label>
+                <input type="number" id="sleepQuality" min="1" max="10" placeholder="e.g., 8">
+            </div>
+
+            <div class="form-group">
+                <label>Woke Up At:</label>
+                <input type="time" id="wokeUp">
+            </div>
+
+            <div class="form-group">
+                <label>In Bed By:</label>
+                <input type="time" id="bedTime">
+            </div>
+
+            <div class="form-group">
+                <label>Pre-Workout Meal:</label>
+                <div class="radio-group">
+                    <label><input type="radio" name="preMeal" value="YES"> Yes</label>
+                    <label><input type="radio" name="preMeal" value="NO"> No</label>
+                </div>
+            </div>
+        </div>
+
+        <div class="separator"></div>
+
+        <!-- Exercises 1-7 -->
+        <div id="exercisesContainer"></div>
+
+        <div class="separator"></div>
+
+        <div class="footer">
+            <h3 style="margin-top: 0;">Workout Summary</h3>
+
+            <div class="form-group">
+                <label>Total Time (minutes):</label>
+                <input type="number" id="totalTime" placeholder="e.g., 90">
+            </div>
+
+            <div class="form-group">
+                <label>Energy Level (1-10):</label>
+                <input type="number" id="energyLevel" min="1" max="10" placeholder="e.g., 8">
+            </div>
+
+            <div class="form-group">
+                <label>Best Set of the Day:</label>
+                <input type="text" id="bestSet" placeholder="e.g., Bench Press 80kg x 8 reps">
+            </div>
+
+            <div class="form-group">
+                <label>What to Improve Next Time:</label>
+                <textarea id="improve" rows="2" placeholder="e.g., Focus on slower eccentric on squats"></textarea>
+            </div>
+
+            <div class="form-group">
+                <label>Next Workout Goals:</label>
+                <textarea id="goals" rows="3" placeholder="1. Increase bench press weight by 2.5kg&#10;2. Complete all sets without long rest"></textarea>
+            </div>
+        </div>
+
+        <div class="button-group">
+            <button type="button" class="btn-save" onclick="saveWorkout()">💾 Save Workout</button>
+            <button type="button" class="btn-load" onclick="loadWorkout()">📂 Load Saved Workout</button>
+            <button type="button" class="btn-pdf" onclick="savePDF()">📄 Save as PDF</button>
+            <button type="button" class="btn-clear" onclick="clearForm()">🗑️ Clear Form</button>
+        </div>
+    </form>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script>
+// Create exercise fields
+function createExercises() {
+    const container = document.getElementById('exercisesContainer');
+    for (let i = 1; i <= 7; i++) {
+        const sets = i <= 4 ? 4 : 3;
+        const exerciseDiv = document.createElement('div');
+        exerciseDiv.className = 'exercise-block';
+        exerciseDiv.innerHTML = `
+            <div class="exercise-title">EXERCISE ${i}</div>
+            <div class="form-group">
+                <label>Exercise Name:</label>
+                <input type="text" id="exercise${i}Name" placeholder="e.g., Bench Press">
+            </div>
+            ${Array.from({length: sets}, (_, j) => `
+                <div class="set-grid">
+                    <span class="set-label">SET ${j + 1}:</span>
+                    <input type="number" id="ex${i}set${j + 1}weight" placeholder="kg" step="0.5">
+                    <input type="number" id="ex${i}set${j + 1}reps" placeholder="reps" min="0">
+                    <input type="number" id="ex${i}set${j + 1}rpe" placeholder="RPE" min="1" max="10">
+                </div>
+            `).join('')}
+            <div class="form-group" style="margin-top: 10px;">
+                <label>Notes:</label>
+                <input type="text" id="exercise${i}Notes" placeholder="Any notes about this exercise...">
+            </div>
+        `;
+        container.appendChild(exerciseDiv);
+    }
+}
+
+// Initialize
+createExercises();
+document.getElementById('date').valueAsDate = new Date();
+
+// Save workout to localStorage
+function saveWorkout() {
+    const formData = {
+        dayNumber: document.getElementById('dayNumber').value,
+        date: document.getElementById('date').value,
+        workoutType: document.querySelector('input[name="workoutType"]:checked')?.value,
+        bodyweight: document.getElementById('bodyweight').value,
+        sleepHours: document.getElementById('sleepHours').value,
+        sleepQuality: document.getElementById('sleepQuality').value,
+        wokeUp: document.getElementById('wokeUp').value,
+        bedTime: document.getElementById('bedTime').value,
+        preMeal: document.querySelector('input[name="preMeal"]:checked')?.value,
+        exercises: [],
+        totalTime: document.getElementById('totalTime').value,
+        energyLevel: document.getElementById('energyLevel').value,
+        bestSet: document.getElementById('bestSet').value,
+        improve: document.getElementById('improve').value,
+        goals: document.getElementById('goals').value
+    };
+
+    // Save exercises
+    for (let i = 1; i <= 7; i++) {
+        const sets = i <= 4 ? 4 : 3;
+        const exercise = {
+            name: document.getElementById(`exercise${i}Name`).value,
+            sets: [],
+            notes: document.getElementById(`exercise${i}Notes`).value
+        };
+        for (let j = 1; j <= sets; j++) {
+            exercise.sets.push({
+                weight: document.getElementById(`ex${i}set${j}weight`).value,
+                reps: document.getElementById(`ex${i}set${j}reps`).value,
+                rpe: document.getElementById(`ex${i}set${j}rpe`).value
+            });
+        }
+        formData.exercises.push(exercise);
+    }
+
+    // Get existing workouts
+    const workouts = JSON.parse(localStorage.getItem('workouts') || '[]');
+
+    // Add timestamp
+    formData.timestamp = new Date().toISOString();
+    formData.id = Date.now();
+
+    // Add new workout
+    workouts.push(formData);
+    localStorage.setItem('workouts', JSON.stringify(workouts));
+
+    showMessage('Workout saved successfully! 💪');
+
+    // Also save as latest
+    localStorage.setItem('lastWorkout', JSON.stringify(formData));
+}
+
+// Load workout from localStorage
+function loadWorkout() {
+    const lastWorkout = localStorage.getItem('lastWorkout');
+    if (!lastWorkout) {
+        alert('No saved workout found!');
+        return;
+    }
+
+    const data = JSON.parse(lastWorkout);
+
+    document.getElementById('dayNumber').value = data.dayNumber || '';
+    document.getElementById('date').value = data.date || '';
+    if (data.workoutType) {
+        document.querySelector(`input[name="workoutType"][value="${data.workoutType}"]`).checked = true;
+    }
+    document.getElementById('bodyweight').value = data.bodyweight || '';
+    document.getElementById('sleepHours').value = data.sleepHours || '';
+    document.getElementById('sleepQuality').value = data.sleepQuality || '';
+    document.getElementById('wokeUp').value = data.wokeUp || '';
+    document.getElementById('bedTime').value = data.bedTime || '';
+    if (data.preMeal) {
+        document.querySelector(`input[name="preMeal"][value="${data.preMeal}"]`).checked = true;
+    }
+
+    // Load exercises
+    data.exercises.forEach((exercise, i) => {
+        const exNum = i + 1;
+        document.getElementById(`exercise${exNum}Name`).value = exercise.name || '';
+        document.getElementById(`exercise${exNum}Notes`).value = exercise.notes || '';
+        exercise.sets.forEach((set, j) => {
+            const setNum = j + 1;
+            document.getElementById(`ex${exNum}set${setNum}weight`).value = set.weight || '';
+            document.getElementById(`ex${exNum}set${setNum}reps`).value = set.reps || '';
+            document.getElementById(`ex${exNum}set${setNum}rpe`).value = set.rpe || '';
+        });
+    });
+
+    document.getElementById('totalTime').value = data.totalTime || '';
+    document.getElementById('energyLevel').value = data.energyLevel || '';
+    document.getElementById('bestSet').value = data.bestSet || '';
+    document.getElementById('improve').value = data.improve || '';
+    document.getElementById('goals').value = data.goals || '';
+
+    showMessage('Workout loaded successfully! 📂');
+}
+
+// Clear form
+function clearForm() {
+    if (confirm('Are you sure you want to clear all fields?')) {
+        document.getElementById('workoutForm').reset();
+        document.getElementById('date').valueAsDate = new Date();
+    }
+}
+
+// Show success message
+function showMessage(msg) {
+    const msgEl = document.getElementById('successMessage');
+    msgEl.textContent = msg;
+    msgEl.style.display = 'block';
+    setTimeout(() => {
+        msgEl.style.display = 'none';
+    }, 3000);
+}
+
+// Save as PDF
+function savePDF() {
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF();
+
+    const date = document.getElementById('date').value || 'N/A';
+    const day = document.getElementById('dayNumber').value || 'N/A';
+    const workoutType = document.querySelector('input[name="workoutType"]:checked')?.value || 'N/A';
+
+    let yPos = 20;
+    const lineHeight = 7;
+    const pageHeight = doc.internal.pageSize.height;
+
+    // Helper to add new page if needed
+    function checkNewPage() {
+        if (yPos > pageHeight - 20) {
+            doc.addPage();
+            yPos = 20;
+        }
+    }
+
+    // Title
+    doc.setFontSize(16);
+    doc.text('WORKOUT LOG', 105, yPos, { align: 'center' });
+    yPos += 10;
+
+    // Basic Info
+    doc.setFontSize(10);
+    doc.text(`Date: ${date}`, 20, yPos);
+    doc.text(`Day: ${day}/84`, 120, yPos);
+    yPos += lineHeight;
+
+    doc.text(`Workout Type: ${workoutType}`, 20, yPos);
+    doc.text(`Bodyweight: ${document.getElementById('bodyweight').value || 'N/A'} kg`, 120, yPos);
+    yPos += lineHeight;
+
+    doc.text(`Sleep: ${document.getElementById('sleepHours').value || 'N/A'} hrs (Quality: ${document.getElementById('sleepQuality').value || 'N/A'}/10)`, 20, yPos);
+    yPos += lineHeight;
+
+    doc.text(`Woke up: ${document.getElementById('wokeUp').value || 'N/A'}`, 20, yPos);
+    doc.text(`Bed by: ${document.getElementById('bedTime').value || 'N/A'}`, 120, yPos);
+    yPos += lineHeight;
+
+    doc.text(`Pre-workout meal: ${document.querySelector('input[name="preMeal"]:checked')?.value || 'N/A'}`, 20, yPos);
+    yPos += lineHeight + 3;
+
+    // Exercises
+    for (let i = 1; i <= 7; i++) {
+        checkNewPage();
+
+        const exName = document.getElementById(`exercise${i}Name`).value;
+        if (!exName) continue;
+
+        doc.setFontSize(11);
+        doc.text(`EXERCISE ${i}: ${exName}`, 20, yPos);
+        yPos += lineHeight;
+
+        doc.setFontSize(9);
+        const sets = i <= 4 ? 4 : 3;
+        for (let j = 1; j <= sets; j++) {
+            const weight = document.getElementById(`ex${i}set${j}weight`).value || '-';
+            const reps = document.getElementById(`ex${i}set${j}reps`).value || '-';
+            const rpe = document.getElementById(`ex${i}set${j}rpe`).value || '-';
+
+            doc.text(`  Set ${j}: ${weight}kg x ${reps} reps (RPE: ${rpe}/10)`, 20, yPos);
+            yPos += lineHeight;
+            checkNewPage();
+        }
+
+        const notes = document.getElementById(`exercise${i}Notes`).value;
+        if (notes) {
+            doc.text(`  Notes: ${notes}`, 20, yPos);
+            yPos += lineHeight;
+        }
+        yPos += 3;
+    }
+
+    // Summary
+    checkNewPage();
+    doc.setFontSize(12);
+    doc.text('WORKOUT SUMMARY', 20, yPos);
+    yPos += lineHeight + 2;
+
+    doc.setFontSize(10);
+    doc.text(`Total Time: ${document.getElementById('totalTime').value || 'N/A'} minutes`, 20, yPos);
+    yPos += lineHeight;
+
+    doc.text(`Energy Level: ${document.getElementById('energyLevel').value || 'N/A'}/10`, 20, yPos);
+    yPos += lineHeight;
+
+    doc.text(`Best Set: ${document.getElementById('bestSet').value || 'N/A'}`, 20, yPos);
+    yPos += lineHeight;
+
+    const improve = document.getElementById('improve').value;
+    if (improve) {
+        doc.text('What to Improve:', 20, yPos);
+        yPos += lineHeight;
+        const improveLines = doc.splitTextToSize(improve, 170);
+        improveLines.forEach(line => {
+            checkNewPage();
+            doc.text(line, 25, yPos);
+            yPos += lineHeight;
+        });
+    }
+
+    const goals = document.getElementById('goals').value;
+    if (goals) {
+        yPos += 2;
+        checkNewPage();
+        doc.text('Next Workout Goals:', 20, yPos);
+        yPos += lineHeight;
+        const goalLines = doc.splitTextToSize(goals, 170);
+        goalLines.forEach(line => {
+            checkNewPage();
+            doc.text(line, 25, yPos);
+            yPos += lineHeight;
+        });
+    }
+
+    // Save PDF
+    doc.save(`workout-day${day}-${date}.pdf`);
+    showMessage('PDF saved successfully! 📄');
+}
+
+// Auto-save on input (optional)
+let autoSaveTimer;
+document.getElementById('workoutForm').addEventListener('input', () => {
+    clearTimeout(autoSaveTimer);
+    autoSaveTimer = setTimeout(() => {
+        localStorage.setItem('autosave', JSON.stringify(getFormData()));
+    }, 2000);
+});
+
+function getFormData() {
+    const formData = new FormData(document.getElementById('workoutForm'));
+    return Object.fromEntries(formData.entries());
+}
+</script>
+
+</body>
+</html>
